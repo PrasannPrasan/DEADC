@@ -223,10 +223,6 @@ function App() {
       Unleash your creativity with AI-powered image generation and mint your creations into NFTs for the blockchain art market.
     </p>
     <br/>
-    <h3>
-      How to Use:
-    </h3>
-    <PhoneCard />
     <div className="main-inputs">
       <p className='inputs'>Enter Name:</p>
       <input

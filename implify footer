@@ -1,0 +1,59 @@
+[1mdiff --git a/src/App.js b/src/App.js[m
+[1mindex 11ffdeb..ef04802 100644[m
+[1m--- a/src/App.js[m
+[1m+++ b/src/App.js[m
+[36m@@ -223,10 +223,6 @@[m [mfunction App() {[m
+       Unleash your creativity with AI-powered image generation and mint your creations into NFTs for the blockchain art market.[m
+     </p>[m
+     <br/>[m
+[31m-    <h3>[m
+[31m-      How to Use:[m
+[31m-    </h3>[m
+[31m-    <PhoneCard />[m
+     <div className="main-inputs">[m
+       <p className='inputs'>Enter Name:</p>[m
+       <input[m
+[1mdiff --git a/src/components/Footer.js b/src/components/Footer.js[m
+[1mindex 1c75e97..7164784 100644[m
+[1m--- a/src/components/Footer.js[m
+[1m+++ b/src/components/Footer.js[m
+[36m@@ -1,26 +1,11 @@[m
+ import React from 'react';[m
+[31m-import LinkedinIcon from '../icons/LinkedIn'; // Import your custom SVG icon component[m
+[31m-import GitHubIcon from '../icons/GitHub';[m
+[32m+[m
+ import "./Footer.css";[m
+ [m
+ const Footer = () => {[m
+   return ([m
+     <footer className="text-dark py-4">[m
+[31m-      <div className="container">[m
+[31m-        <ul>[m
+[31m-          <li>[m
+[31m-            <a href='https://www.linkedin.com/in/hristijanmicevski'>[m
+[31m-              <LinkedinIcon />[m
+[31m-            </a>[m
+[31m-          </li>[m
+[31m-          <li>[m
+[31m-            <a href='https://www.github.com/kikomicevski'>[m
+[31m-              <GitHubIcon />[m
+[31m-            </a>[m
+[31m-          </li>[m
+[31m-        </ul>[m
+[31m-        <p>&copy; Lunched by<a href='https://www.linkedin.com/in/hristijanmicevski' style={{ margin: '10px' }}>Hristijan</a> {new Date().getFullYear()}</p>[m
+[31m-      </div>[m
+[32m+[m[41m      [m
+     </footer>[m
+   );[m
+ };[m
+[1mdiff --git a/src/icons/LinkedIn.js b/src/icons/LinkedIn.js[m
+[1mindex 95473f4..42a201d 100644[m
+[1m--- a/src/icons/LinkedIn.js[m
+[1m+++ b/src/icons/LinkedIn.js[m
+[36m@@ -15,4 +15,4 @@[m [mconst LinkedinIcon = (props) => {[m
+   );[m
+ };[m
+ [m
+[31m-export default LinkedinIcon;[m
+[32m+[m[32mexport default LinkedinIcon;[m
+\ No newline at end of file[m
