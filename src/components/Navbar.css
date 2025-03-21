@@ -1,0 +1,19 @@
+/* Navbar */
+.navbar {
+    display: flex;
+    align-items: center; /* Center items horizontally */
+    text-align: center; /* Center text horizontally */
+}
+  
+.navbar img {
+    width: 150px;
+    height: 60px;
+}
+
+  
+/* Add media queries for smaller screens */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+}

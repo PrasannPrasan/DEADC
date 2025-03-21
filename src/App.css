@@ -1,0 +1,161 @@
+body {
+    background-image: url('./images/bg.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+@font-face {
+    font-family: Detacher;
+    src: url(./fonts/Detacher-Regular.otf);
+}
+
+.main {
+    color: #000000;
+    padding: 20px;
+    text-align: center;
+    font-family: 'Detacher';
+}
+
+h1 {
+    font-size: 30px;
+}
+
+p {
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+
+
+.inputs {
+    margin-top: 5px;
+    margin-bottom: 0px;
+}
+
+.main-image {
+    width: 350px;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.main-inputs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 50px;
+}
+
+.main input[type="text"] {
+    padding: 10px;
+    width: 500px;
+    margin-top: 10px;
+    border-radius: 10px;
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, rgba(10, 37, 64, 0.35) 0px -2px 6px 0px inset;
+}
+
+.upload-input {
+    display: none;
+}
+
+.upload-input {
+    margin-top: 20px;
+}
+
+.image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 90%;
+    width: 512px;
+    height: 512px;
+    margin: 0 auto;
+    margin-top: 20px;
+    border: 2px solid #000;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #fbf9f9;
+}
+
+.image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image__placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.image__placeholder p {
+    margin: 0 10px;
+}
+
+
+/* Add media queries for smaller screens */
+@media (max-width: 768px) {
+    .main {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    p {
+        font-size: 18px;
+    }
+
+    .main-image {
+        max-width: 90%;
+        width: auto;
+        height: auto;
+    }
+
+    .main input[type="text"] {
+        width: 90%;
+    }
+
+    .upload-input {
+        display: none;
+    }
+    
+    .upload-input {
+        margin-top: 20px;
+    }
+    
+    .image {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        max-width: 350px;
+        max-height: 350px;
+        margin: 0 auto;
+        margin-top: 20px;
+        border: 2px solid #000;
+        border-radius: 10px;
+        overflow: hidden;
+        background-color: #fbf9f9;
+    }
+    
+    .image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .image__placeholder {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 350px;
+        height: 350px;
+    }
+    
+    .image__placeholder p {
+        margin: 0 10px;
+    }
+}
