@@ -10,6 +10,7 @@ import mainImage from '../src/images/img-header.png';
 // Components
 import Spinner from 'react-bootstrap/Spinner';
 import PhoneCard from './components/PhoneCard';
+import ChatBot from './components/ChatBot';
 
 // ABIs
 import MintedABI from './abis/MintedABI.json';
@@ -28,6 +29,10 @@ function App() {
   const [message, setMessage] = useState("");
   const [isWaiting, setIsWaiting] = useState(false);
   const [isImageReady, setIsImageReady] = useState(false);
+  const [inputText, setInputText] = useState('');
+  const [messages, setMessages] = useState([
+    { text: "Hi! I'm here to help you with Minted AI DApp. What would you like to know?", isBot: true }
+  ]);
 
   useEffect(() => {
     loadBlockchainData();
@@ -36,13 +41,20 @@ function App() {
   const loadBlockchainData = async () => {
     try {
       if (window.ethereum) {
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        // Check if already connected
         const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
         const accounts = await provider.listAccounts();
+        
+        if (accounts.length === 0) {
+          // Only request accounts if not already connected
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          accounts = await provider.listAccounts();
+        }
+        
         setAccount(accounts[0]);
+        const signer = provider.getSigner();
 
-        const abi = Array.isArray(MintedABI) ? MintedABI : []; // Ensure abi is an array
+        const abi = Array.isArray(MintedABI) ? MintedABI : [];
         const address = mintedAddress;
 
         const contract = new ethers.Contract(address, abi, signer);
@@ -51,8 +63,12 @@ function App() {
         window.alert('Please install MetaMask to use this application.');
       }
     } catch (error) {
-      console.error(error);
-      window.alert('Failed to load blockchain data. Please check the console for errors.');
+      console.error('Error connecting to MetaMask:', error);
+      if (error.code === -32002) {
+        window.alert('Please check MetaMask for pending connection requests.');
+      } else {
+        window.alert('Failed to load blockchain data. Please check the console for errors.');
+      }
     }
   };
 
@@ -85,35 +101,83 @@ function App() {
   const createImage = async () => {
     setMessage("Generating Image...");
 
-    // You can replace this with different model API's
-    const URL = `https://api-inference.huggingface.co/models/stablediffusionapi/dreamshaper-v7`;
+    const URL = 'https://stablediffusionapi.com/api/v3/text2img';
 
-    // Send the request
     try {
       const response = await axios({
         url: URL,
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.REACT_APP_HUGGING_FACE_API_KEY}`,
-          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        data: JSON.stringify({
-          inputs: description,
-          options: { wait_for_model: true },
-        }),
-        responseType: 'arraybuffer',
+        data: {
+          key: process.env.REACT_APP_HUGGING_FACE_API_KEY,
+          prompt: description,
+          negative_prompt: "blurry, bad quality, distorted, deformed, ugly, bad anatomy",
+          width: "512",
+          height: "512",
+          samples: "1",
+          num_inference_steps: "20",
+          seed: null,
+          guidance_scale: 7.5,
+          safety_checker: "yes",
+          multi_lingual: "no",
+          panorama: "no",
+          self_attention: "no",
+          upscale: "no",
+          embeddings_model: null,
+          webhook: null,
+          track_id: null
+        }
       });
 
-      const type = response.headers['content-type'];
-      const data = Buffer.from(response.data).toString('base64');
-      const img = `data:${type};base64,${data}`; // <-- This is so we can render it on the page
-      setImage(img);
+      console.log('Image generation response:', response.data);
 
-      return response.data;
+      if (response.data.status === 'success') {
+        const imageUrl = response.data.output[0];
+        setImage(imageUrl);
+        return imageUrl;
+      } else if (response.data.status === 'processing') {
+        // Handle async generation
+        const fetchResult = async () => {
+          const resultResponse = await axios.post(
+            'https://stablediffusionapi.com/api/v3/fetch',
+            {
+              key: process.env.REACT_APP_HUGGING_FACE_API_KEY,
+              request_id: response.data.id
+            }
+          );
+          return resultResponse.data;
+        };
+
+        // Poll for result with exponential backoff
+        let result;
+        let retryCount = 0;
+        const maxRetries = 10;
+        const baseDelay = 3000; // Start with 3 seconds
+
+        while (retryCount < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(1.5, retryCount)));
+          result = await fetchResult();
+
+          if (result.status === 'success') {
+            const imageUrl = result.output[0];
+            setImage(imageUrl);
+            return imageUrl;
+          } else if (result.status === 'failed') {
+            throw new Error(result.message || 'Image generation failed');
+          }
+          
+          retryCount++;
+        }
+        throw new Error('Image generation timed out');
+      } else {
+        throw new Error(response.data.message || 'Failed to generate image');
+      }
     } catch (error) {
       console.error('Error generating image:', error);
-      throw new Error('Failed to generate image');
+      setMessage(`Failed to generate image: ${error.message}`);
+      throw error;
     }
   };
 
@@ -160,56 +224,119 @@ function App() {
   const uploadImage = async (imageData) => {
     setMessage("Uploading Image...");
 
-    // Create an instance of NFT.Storage
-    const nftstorage = new NFTStorage({ token: process.env.REACT_APP_NFT_STORAGE_API_KEY });
+    try {
+      if (!process.env.REACT_APP_NFT_STORAGE_API_KEY) {
+        throw new Error('NFT.Storage API key is not configured');
+      }
 
+      // Create an instance of NFT.Storage
+      const nftstorage = new NFTStorage({ token: process.env.REACT_APP_NFT_STORAGE_API_KEY });
 
-    // Send a request to store the image
-    const { ipnft } = await nftstorage.store({
-      image: new File([imageData], "image.jpeg", { type: "image/jpeg" }),
-      name: name,
-      description: description,
-    });
+      // Create a Blob from the image data if it's a URL
+      let imageFile;
+      if (typeof imageData === 'string' && imageData.startsWith('http')) {
+        const response = await fetch(imageData);
+        const blob = await response.blob();
+        imageFile = new File([blob], 'image.jpeg', { type: 'image/jpeg' });
+      } else if (imageData instanceof File) {
+        imageFile = imageData;
+      } else {
+        throw new Error('Invalid image data format');
+      }
 
-    // Return the URL
-    return `https://ipfs.io/ipfs/${ipnft}/metadata.json`;
+      // Prepare metadata
+      const metadata = {
+        name,
+        description,
+        image: imageFile
+      };
+
+      // Store the NFT data
+      const result = await nftstorage.store(metadata);
+
+      // Get the IPFS URL for the metadata
+      const url = `https://ipfs.io/ipfs/${result.ipnft}/metadata.json`;
+      
+      setMessage("Image uploaded successfully!");
+      return url;
+    } catch (error) {
+      console.error('Error uploading to NFT.Storage:', error);
+      setMessage(`Failed to upload image: ${error.message}`);
+      throw error;
+    }
   };
 
   const aiImage = async (imageData) => {
-    setMessage("Uploading Image...");
-
-    // Create instance of NFT.Storage
-    const nftstorage = new NFTStorage({ token: process.env.REACT_APP_NFT_STORAGE_API_KEY });
-
-    // Send request to store image
-    const { ipnft } = await nftstorage.store({
-      image: new File([imageData], "image.jpeg", { type: "image/jpeg" }),
-      name: name,
-      description: description,
-    });
-
-    // Save the URL
-    const url = `https://ipfs.io/ipfs/${ipnft}/metadata.json`;
-
-    return url;
+    return await uploadImage(imageData);
   };
-
 
   const handleMint = async () => {
-    try {
-      if (contract) {
-        const tokenId = await contract.mintNFT(url.toString()); // Convert URL to string
-        console.log('Token ID:', tokenId);
+    if (!contract) {
+      setMessage("Please connect your wallet first");
+      return;
+    }
 
-        // Rest of the code...
-      } else {
-        window.alert('Contract instance not available.');
-      }
+    if (!url) {
+      setMessage("Please generate or upload an image first");
+      return;
+    }
+
+    try {
+      setMessage("Minting NFT...");
+      setIsWaiting(true);
+
+      // Call the smart contract's mint function
+      const transaction = await contract.mint(url);
+      await transaction.wait();
+
+      setMessage("NFT Minted Successfully!");
     } catch (error) {
-      console.error(error);
-      window.alert('Failed to mint the token. Please check the console for errors.');
+      console.error('Error minting NFT:', error);
+      setMessage(`Failed to mint NFT: ${error.message}`);
+    } finally {
+      setIsWaiting(false);
     }
   };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!inputText.trim()) return;
+  
+    // Add user message
+    setMessages(prev => [...prev, { text: inputText, isBot: false }]);
+
+    const API_KEY = process.env.REACT_APP_GEMINI_API_KEY; // Ensure this is set in your .env file
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+
+  
+    try {
+      const response = await axios.post(API_URL,{
+        headers: {
+          "Content-Type": "application/json"
+        },
+        messages:[
+            {
+                role:"system",
+                content:"You are a helpful assiant for the Minted AI DApp, which helps users create and mint NFT using AI-generate is images. Provide concise, helpful answers about wallet connetion, NFT minting, and AI image generation"
+            },{
+                role : "user",
+                content: inputText
+            }],
+    });
+
+    const botResponse = response.data.choices[0].message.content;
+    setMessages(prev => [...prev, { text: botResponse, isBot: true }]);
+  } catch (error) {
+    console.error('Error:', error);
+    setMessages(prev => [...prev, { 
+      text: "Sorry, I'm having trouble responding right now. Please try again.", 
+      isBot: true 
+    }]);
+  }
+
+  setInputText('');
+};
+
   
   
 
@@ -284,6 +411,7 @@ function App() {
             </div>
           )
         )}
+
       </div>
       {isImageReady && (
     <button
@@ -300,6 +428,7 @@ function App() {
     </button>
   )}
     </div>
+    <ChatBot/>
   </div>
   );
 }
