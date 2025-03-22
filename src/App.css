@@ -25,8 +25,6 @@ p {
     margin-bottom: 20px;
 }
 
-
-
 .inputs {
     margin-top: 5px;
     margin-bottom: 0px;
@@ -94,7 +92,6 @@ p {
     margin: 0 10px;
 }
 
-
 /* Add media queries for smaller screens */
 @media (max-width: 768px) {
     .main {
@@ -158,4 +155,34 @@ p {
     .image__placeholder p {
         margin: 0 10px;
     }
+}
+
+.header-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.logout-button {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(45deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.logout-button:hover {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }

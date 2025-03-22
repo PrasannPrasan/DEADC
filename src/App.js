@@ -11,6 +11,7 @@ import mainImage from '../src/images/img-header.png';
 import Spinner from 'react-bootstrap/Spinner';
 import PhoneCard from './components/PhoneCard';
 import ChatBot from './components/ChatBot';
+import Login from './components/Login';
 
 // ABIs
 import MintedABI from './abis/MintedABI.json';
@@ -20,6 +21,7 @@ const mintedAddress = "0x184CE4383e9554356c4b66Ed7FB7d441DbD7e12E";
 function App() {
   const [contract, setContract] = useState(null);
   const [account, setAccount] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null); // State for the generated image
@@ -35,41 +37,51 @@ function App() {
   ]);
 
   useEffect(() => {
-    loadBlockchainData();
-  }, []);
-
-  const loadBlockchainData = async () => {
-    try {
+    // Check if user was previously authenticated
+    const checkAuthStatus = async () => {
       if (window.ethereum) {
-        // Check if already connected
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const accounts = await provider.listAccounts();
-        
-        if (accounts.length === 0) {
-          // Only request accounts if not already connected
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
-          accounts = await provider.listAccounts();
+        if (accounts.length > 0) {
+          handleLogin(accounts[0]);
         }
-        
-        setAccount(accounts[0]);
-        const signer = provider.getSigner();
-
-        const abi = Array.isArray(MintedABI) ? MintedABI : [];
-        const address = mintedAddress;
-
-        const contract = new ethers.Contract(address, abi, signer);
-        setContract(contract);
-      } else {
-        window.alert('Please install MetaMask to use this application.');
       }
+    };
+    
+    checkAuthStatus();
+  }, []);
+
+  const handleLogin = async (address) => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      
+      // Set up the contract
+      const contract = new ethers.Contract(mintedAddress, MintedABI, signer);
+      
+      setContract(contract);
+      setAccount(address);
+      setIsAuthenticated(true);
     } catch (error) {
-      console.error('Error connecting to MetaMask:', error);
-      if (error.code === -32002) {
-        window.alert('Please check MetaMask for pending connection requests.');
-      } else {
-        window.alert('Failed to load blockchain data. Please check the console for errors.');
-      }
+      console.error('Error during login:', error);
+      setIsAuthenticated(false);
     }
+  };
+
+  const handleLogout = () => {
+    setContract(null);
+    setAccount(null);
+    setIsAuthenticated(false);
+    // Reset other necessary state variables
+    setName("");
+    setDescription("");
+    setImage(null);
+    setUploadedImage(null);
+    setIsUploaded(false);
+    setURL(null);
+    setMessage("");
+    setIsWaiting(false);
+    setIsImageReady(false);
   };
 
   const submitHandler = async (e) => {
@@ -215,20 +227,13 @@ function App() {
     }
   };
   
-  const handleUpload = async () => {
+  const handleUpload = () => {
     // Trigger the hidden file input
-    document.getElementById('fileInput').click();
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+      fileInput.click();
+    }
   };
-  
-  useEffect(() => {
-    // Listen for changes in the file input
-    document.getElementById('fileInput').addEventListener('change', handleFileInputChange);
-  
-    // Cleanup the event listener when the component unmounts
-    return () => {
-      document.getElementById('fileInput').removeEventListener('change', handleFileInputChange);
-    };
-  }, []);
 
   const handleRemove = () => {
     setUploadedImage(null);
@@ -352,103 +357,105 @@ function App() {
   setInputText('');
 };
 
-  
-  
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
     <div className="main text-center mt-4">
-    <img src={mainImage} className="main-image" alt="mainImage" />
-    <h1>
-    Create and Trade AI-Driven NFTs
-    </h1>
-    <p>
-      Unleash your creativity with AI-powered image generation and mint your creations into NFTs for the blockchain art market.
-    </p>
-    <br/>
-    <h3>
-      How to Use:
-    </h3>
-    <PhoneCard />
-    <div className="main-inputs">
-      <p className='inputs'>Enter Name:</p>
-      <input
-        type="text"
-        placeholder="ex. My First NFT"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <p className='inputs'>Enter Description:</p>
-      <input
-        type="text"
-        placeholder="ex. Cat swimming in the ocean"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <div className="buttons-container">
-      {/* Add file input for image upload */}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileInputChange}
-        id="fileInput" // Add an id to the file input
-        style={{ display: 'none' }} // Hide the file input
-      />
+      <div className="header-container">
+        <img src={mainImage} className="main-image" alt="mainImage" />
+        <button className="logout-button" onClick={handleLogout}>
+          Disconnect Wallet
+        </button>
+      </div>
+      <h1>Create and Trade AI-Driven NFTs</h1>
+      <p>Connected Address: {account}</p>
+      <p>
+        Unleash your creativity with AI-powered image generation and mint your creations into NFTs for the blockchain art market.
+      </p>
+      <br/>
+      <h3>
+        How to Use:
+      </h3>
+      <PhoneCard />
+      <div className="main-inputs">
+        <p className='inputs'>Enter Name:</p>
+        <input
+          type="text"
+          placeholder="ex. My First NFT"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <p className='inputs'>Enter Description:</p>
+        <input
+          type="text"
+          placeholder="ex. Cat swimming in the ocean"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <div className="buttons-container">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileInputChange}
+            id="fileInput"
+            style={{ display: 'none' }}
+          />
 
-      {/* Add a button to upload an image */}
+          <button
+            className="btn upload-btn"
+            onClick={handleUpload}
+          >
+            {isUploaded ? 'Uploaded' : 'Upload Image'}
+          </button>
+
+          {isUploaded && (
+            <button
+              className="btn remove-btn"
+              onClick={handleRemove}
+            >
+              Remove
+            </button>
+          )}
+          
+          <button className="btn generate-btn" onClick={submitHandler}>
+            Generate
+          </button>
+        </div>
+      </div>
+
+      <div className="image-container">
+        <div className="image">
+          {!isWaiting && (isUploaded ? uploadedImage : image) ? (
+            <img src={isUploaded ? URL.createObjectURL(uploadedImage) : image} alt="Generated image" />
+          ) : (
+            isWaiting && (
+              <div className="image__placeholder">
+                <Spinner animation="border" />
+                <p>{message}</p>
+              </div>
+            )
+          )}
+
+        </div>
+        {isImageReady && (
       <button
-        className="btn upload-btn"
-        onClick={handleUpload}
+        className="btn mint-btn"
+        onClick={() => {
+          if (name === "" || description === "") {
+            window.alert("Please provide a name and description");
+            return;
+          }
+          handleMint();
+        }}
       >
-        {isUploaded ? 'Uploaded' : 'Upload Image'}
+        Mint
       </button>
-
-      {/* Add a button to remove the uploaded image */}
-      {isUploaded && (
-        <button
-          className="btn remove-btn"
-          onClick={handleRemove}
-        >
-          Remove
-        </button>
-      )}
-      
-        <button className="btn generate-btn" onClick={submitHandler}>
-          Generate
-        </button>
+    )}
       </div>
+      <ChatBot/>
     </div>
-
-    <div className="image-container">
-      <div className="image">
-        {!isWaiting && (isUploaded ? uploadedImage : image) ? (
-          <img src={isUploaded ? URL.createObjectURL(uploadedImage) : image} alt="Generated image" />
-        ) : (
-          isWaiting && (
-            <div className="image__placeholder">
-              <Spinner animation="border" />
-              <p>{message}</p>
-            </div>
-          )
-        )}
-
-      </div>
-      {isImageReady && (
-    <button
-      className="btn mint-btn"
-      onClick={() => {
-        if (name === "" || description === "") {
-          window.alert("Please provide a name and description");
-          return;
-        }
-        handleMint();
-      }}
-    >
-      Mint
-    </button>
-  )}
-    </div>
-    <ChatBot/>
-  </div>
   );
 }
 
