@@ -101,9 +101,15 @@ function App() {
   const createImage = async () => {
     setMessage("Generating Image...");
 
-    const URL = 'https://stablediffusionapi.com/api/v3/text2img';
-
     try {
+      // Check if API key exists
+      const apiKey = process.env.REACT_APP_HUGGING_FACE_API_KEY;
+      if (!apiKey) {
+        throw new Error('Hugging Face API key is not configured. Please check your .env file.');
+      }
+
+      console.log('Using API key:', apiKey); // Temporary log to debug
+
       const response = await axios({
         url: URL,
         method: 'POST',
@@ -111,7 +117,7 @@ function App() {
           'Content-Type': 'application/json',
         },
         data: {
-          key: process.env.REACT_APP_HUGGING_FACE_API_KEY,
+          key: apiKey,
           prompt: description,
           negative_prompt: "blurry, bad quality, distorted, deformed, ugly, bad anatomy",
           width: "512",
@@ -143,7 +149,7 @@ function App() {
           const resultResponse = await axios.post(
             'https://stablediffusionapi.com/api/v3/fetch',
             {
-              key: process.env.REACT_APP_HUGGING_FACE_API_KEY,
+              key: apiKey,
               request_id: response.data.id
             }
           );
@@ -159,7 +165,7 @@ function App() {
         while (retryCount < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(1.5, retryCount)));
           result = await fetchResult();
-
+          
           if (result.status === 'success') {
             const imageUrl = result.output[0];
             setImage(imageUrl);
@@ -176,8 +182,17 @@ function App() {
       }
     } catch (error) {
       console.error('Error generating image:', error);
-      setMessage(`Failed to generate image: ${error.message}`);
-      throw error;
+      if (error.response) {
+        // The request was made and the server responded with an error
+        console.error('API Error Response:', error.response.data);
+        throw new Error(`API Error: ${error.response.data.error || error.response.data.message || 'Unknown API error'}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        throw new Error('No response received from the API server');
+      } else {
+        // Something happened in setting up the request
+        throw error;
+      }
     }
   };
 
@@ -350,6 +365,10 @@ function App() {
       Unleash your creativity with AI-powered image generation and mint your creations into NFTs for the blockchain art market.
     </p>
     <br/>
+    <h3>
+      How to Use:
+    </h3>
+    <PhoneCard />
     <div className="main-inputs">
       <p className='inputs'>Enter Name:</p>
       <input
