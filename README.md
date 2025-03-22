@@ -81,9 +81,3 @@ To set up the development environment and run the Minted AI DApp locally, follow
     npm start
 
 The DApp will be accessible at http://localhost:3000.
-
-## Credits
-
-This project was developed by Hristijan Micevski.
-
-LinkedIn:  [Hristijan Micevski](https://www.linkedin.com/in/hristijanmicevski)
